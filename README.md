@@ -1,5 +1,5 @@
 # **Jogo da vida**
-O jogo da vida, feito por **Conway**
+O game da vida, feito por **Conway**
 Caracterizado por ser um automato celular, originalmente
 utilizado para usar um espaço bidimensional, embora existam também
 versoes tridimensionais, em que cada elemento (celula) só pode ter
