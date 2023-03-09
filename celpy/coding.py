@@ -1,65 +1,74 @@
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import pygame
+import time
 
-# convertendo numeros int em binarios
-def converte_binario(numero):
-    binario = bin(numero)
-    binario = binario[2:]
-    if len(binario) < 8:
-        zeros = [0] * (8 - len(binario))
-    binario = zeros + list(binario)
-    return list(binario)
+WIDTH = 800
+HEIGHT = 600
+COLOR_BACKGROUND = (45, 20, 90)
+COLOR_GRID = (80, 20, 90)
+LIVE = (150, 155, 105)
+SHAPE = 60, 80
+GRID_CELL_SIZE = 20
 
+def update(screen, cells, size, with_progress=False):
+    updated_cells = np.zeros((cells.shape[0], cells.shape[1]))
 
-# script
-MAX = 500  # tamanho da grade
-g = np.zeros(1000)  # tamanho da geração
-ng = np.zeros(1000)  # tamanho da nova geração
-regra = int(input("Entrada númerica: "))
-codigo = converte_binario(regra)
+    for row, col in np.ndindex(cells.shape):
+        alive = np.sum(cells[row-1:row+2, col-1:col+2]) - cells[row, col]
+        color = COLOR_BACKGROUND if cells[row, col] == 0  else LIVE
+        
+        if cells[row, col] == 1:
+            if 2 <= alive <= 3:
+                updated_cells[row, col] = 1
+                if with_progress:
+                    color = LIVE
+            else:
+                if with_progress:
+                    color = COLOR_BACKGROUND
+        else:
+            if alive == 3:
+                updated_cells[row, col] = 1
+                if with_progress:
+                    color = LIVE
+        
+        pygame.draw.rect(screen, color, (col * size, row * size, size - 1, size -1))
 
-# matriz que cada linha armazena uma geração de celulas
-matriz_evolucao = np.zeros((MAX, len(g)))  # 500 linhas por 1000 columns
+    return updated_cells
 
-# definindo geração inicial pra começar com uma celula viva.
-g[len(g) // 2] = 1  # tamanho da geracao inicial com divisao inteira por 2 = 500
-# isso coloca uma celula viva na metade da matriz
+def main():
+    pygame.init()
+    screen = pygame.display.set_mode((WIDTH, HEIGHT))
+    cells = np.zeros(SHAPE)
+    screen.fill(COLOR_GRID)
+    update(screen, cells, GRID_CELL_SIZE)
 
+    pygame.display.flip()
+    pygame.display.update()
 
-# for p atualizar as gerações
-for i in range(MAX):
-    matriz_evolucao[i, :] = g
-    # percorre celulas da geração atual
-    for j in range(len(g)):  # indo de 0 a 1000 -1
-        if g[j - 1] == 0 and g[j] == 0 and g[(j + 1) % len(g)] == 0:
-            ng[j] = int(codigo[7])
-            # se a posição na matriz(g) for j-1, e for == 0
-            # e se for j, e for == 0 e se j+1 com modulo pelo tamanho de (g) == 0
-            # receberá 0, pq o codigo 7 na tabela de binarios é 0
-        # isso serve para os casos de elif abaixo
-        elif g[j - 1] == 0 and g[j] == 0 and g[(j + 1) % len(g)] == 1:
-            ng[j] = int(codigo[6])
-        elif g[j - 1] == 0 and g[j] == 1 and g[(j + 1) % len(g)] == 0:
-            ng[j] = int(codigo[5])
-        elif g[j - 1] == 0 and g[j] == 1 and g[(j + 1) % len(g)] == 1:
-            ng[j] = int(codigo[4])
-        elif g[j - 1] == 1 and g[j] == 0 and g[(j + 1) % len(g)] == 0:
-            ng[j] = int(codigo[3])
-        elif g[j - 1] == 1 and g[j] == 0 and g[(j + 1) % len(g)] == 1:
-            ng[j] = int(codigo[2])
-        elif g[j - 1] == 1 and g[j] == 1 and g[(j + 1) % len(g)] == 0:
-            ng[j] = int(codigo[1])
-        elif g[j - 1] == 1 and g[j] == 1 and g[(j + 1) % len(g)] == 1:
-            ng[j] = int(codigo[0])
-            # lendo da geração g e escrevendo na ng, que irá
-            # formar a nova geração(linha de baixo)
+    running = False
 
-    g = ng.copy()  # caso só atribua, os vetores geram erro
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_SPACE:
+                    running = not running
+                    update(screen, cells, GRID_CELL_SIZE)
+                    pygame.display.update()
+            if pygame.mouse.get_pressed()[0]:
+                pos = pygame.mouse.get_pos()
+                cells[pos[1] // GRID_CELL_SIZE, pos[0] // GRID_CELL_SIZE] = 1
+                update(screen, cells, GRID_CELL_SIZE)
+                pygame.display.update()
 
-# plot
-plt.figure(1)
-plt.axis("off")
-plt.imshow(matriz_evolucao, cmap="gray")
-plt.savefig("Automata.png", dpi=300)
-plt.show()
+        screen.fill(COLOR_GRID)
+        if running:
+            cells = update(screen, cells, GRID_CELL_SIZE, with_progress=True)
+            pygame.display.update()
+
+        time.sleep(0.2)
+
+if __name__ == '__main__':
+    main()
